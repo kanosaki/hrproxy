@@ -1,0 +1,19 @@
+
+# ------------------------------------------------------------------
+# TLS / HTTPS / ACME
+# ------------------------------------------------------------------
+acme_url: https://acme-staging.api.letsencrypt.org/directory # Staging env
+#acme_url: https://acme-v01.api.letsencrypt.org/directory # Production env
+tls_key: private.key
+tls_cert: cert.crt
+
+
+# ------------------------------------------------------------------
+# Domain
+# ------------------------------------------------------------------
+common_name: example.com
+proxies:
+  sub1.example.com:
+    url: http://hogehoge.example.com:4363
+  sub2.example.com:
+    url: http://piyopiyo.example.com:3820

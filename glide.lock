@@ -1,0 +1,29 @@
+hash: 8ef721236dce635ff6b7b51fc3a4696bc80f66e5175e69a37937a36f20a62478
+updated: 2017-01-15T16:32:44.036972878+09:00
+imports:
+- name: github.com/braintree/manners
+  version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
+- name: github.com/coreos/etcd
+  version: f99c76cb4791430a25aaea2e7e44e460a332f261
+  subpackages:
+  - clientv3
+- name: github.com/ericchiang/letsencrypt
+  version: 5ace6db5897773984136b31f10894d0a75001b9d
+  subpackages:
+  - internal/base64
+- name: github.com/pkg/errors
+  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
+- name: github.com/Sirupsen/logrus
+  version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
+- name: github.com/square/go-jose
+  version: 50df5ca198e569d06795909c091ac0cea62e925a
+  subpackages:
+  - cipher
+  - json
+- name: golang.org/x/sys
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  subpackages:
+  - unix
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports: []
