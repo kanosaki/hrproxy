@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 	"io"
+	elastic "gopkg.in/olivere/elastic.v5"
+	"time"
 )
 
 type HRProxy struct {
@@ -15,6 +17,8 @@ type HRProxy struct {
 	server    *manners.GracefulServer
 	acme      *AcmeClient
 	conf      *Config
+	es        *elastic.Client
+	access    *ESLogger
 }
 
 func New(conf *Config) (*HRProxy, error) {
@@ -22,11 +26,18 @@ func New(conf *Config) (*HRProxy, error) {
 	if err != nil {
 		return nil, err
 	}
+	es, err := conf.Elasticsearch.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	access := NewESLogger(es, 100, 30*time.Second, "pub-access")
 	return &HRProxy{
-		conf:      conf,
-		acme:      acme,
-		pubServer: manners.NewServer(),
-		server:    manners.NewServer(),
+		conf:         conf,
+		acme:         acme,
+		pubServer:    manners.NewServer(),
+		server:       manners.NewServer(),
+		es:           es,
+		access:       access,
 	}, nil
 }
 
@@ -54,7 +65,7 @@ func (hrp *HRProxy) ListenAndServeTLS() error {
 }
 
 func (hrp *HRProxy) StartTLS() error {
-	mux := NewHostMux()
+	mux := NewHostMux(hrp.es)
 	for host, proxy := range hrp.conf.Proxies {
 		u, err := url.Parse(proxy.URL)
 		if err != nil {
@@ -71,40 +82,37 @@ func (hrp *HRProxy) StartTLS() error {
 // 1. Response ACME HTTP challenge.
 // 2. Redirect any other requests to HTTPS.
 func (hrp *HRProxy) Start() {
-	log := logrus.WithField("tag", "http")
 	hrp.pubServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := logRequest(log, r)
+		var code int
+		begin := time.Now()
 		if r.URL.Path == hrp.acme.challengePath {
 			// ACME HTTP challenge response.
 			if _, err := io.WriteString(w, hrp.acme.challengeResource); err != nil {
-				l.WithField("code", 500).Infof("Failed to response challenge")
+				code = 500
 			} else {
-				l.WithField("code", 200).Infof("")
+				code = 200
 			}
 		} else {
-			// Redirect to HTTPS
-			var u url.URL
-			u.Scheme = "https"
-			u.Host = r.Host
-			u.Path = r.URL.Path
-			u.RawQuery = r.URL.RawQuery
-			u.Fragment = r.URL.Fragment
-			l.WithField("code", http.StatusMovedPermanently).Infof("")
-			http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
+			if _, ok := hrp.conf.Proxies[r.Host]; ok {
+				// Redirect to HTTPS
+				var u url.URL
+				u.Scheme = "https"
+				u.Host = r.Host
+				u.Path = r.URL.Path
+				u.RawQuery = r.URL.RawQuery
+				u.Fragment = r.URL.Fragment
+				http.Redirect(w, r, u.String(), http.StatusMovedPermanently)
+				code = http.StatusMovedPermanently
+			} else {
+				hj, _ := w.(http.Hijacker)
+				conn, _, _ := hj.Hijack()
+				conn.Close()
+				code = -1
+			}
 		}
+		hrp.access.Add(r, code, begin, time.Now())
 	})
 	if err := hrp.pubServer.ListenAndServe(); err != nil {
 		logrus.Error(err)
 	}
-}
-
-func logRequest(log *logrus.Entry, r *http.Request) *logrus.Entry {
-	return log.WithFields(logrus.Fields{
-		"method":      r.Method,
-		"host":        r.Host,
-		"referer":     r.Referer(),
-		"request":     r.RequestURI,
-		"remote_addr": r.RemoteAddr,
-		"user_agent":  r.Header["User-Agent"],
-	})
 }

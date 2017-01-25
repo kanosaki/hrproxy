@@ -1,5 +1,5 @@
-hash: 8ef721236dce635ff6b7b51fc3a4696bc80f66e5175e69a37937a36f20a62478
-updated: 2017-01-15T16:32:44.036972878+09:00
+hash: 95ac0e43851f7180f26a33ee03185941fcc3c9cf528ca345b4deb1adb7fb7fc6
+updated: 2017-01-24T01:26:07.820124927+09:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -11,6 +11,12 @@ imports:
   version: 5ace6db5897773984136b31f10894d0a75001b9d
   subpackages:
   - internal/base64
+- name: github.com/fatih/color
+  version: 42c364ba490082e4815b5222728711b3440603eb
+- name: github.com/mattn/go-colorable
+  version: d228849504861217f796da67fae4f6e347643f15
+- name: github.com/mattn/go-isatty
+  version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/Sirupsen/logrus
@@ -20,10 +26,20 @@ imports:
   subpackages:
   - cipher
   - json
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - context
+  - context/ctxhttp
 - name: golang.org/x/sys
   version: d75a52659825e75fff6158388dddc6a5b04f9ba5
   subpackages:
   - unix
+- name: gopkg.in/olivere/elastic.v5
+  version: f27a28dd68c359eb20ce5918a7d976f34c18cf03
+  subpackages:
+  - backoff
+  - uritemplates
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports: []

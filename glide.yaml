@@ -3,3 +3,6 @@ import:
   - package: github.com/coreos/etcd/clientv3
   - package: github.com/braintree/manners
   - package: github.com/ericchiang/letsencrypt
+  - package: github.com/fatih/color
+  - package: github.com/mattn/go-isatty
+  - package: gopkg.in/olivere/elastic.v5

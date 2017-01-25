@@ -29,6 +29,7 @@ type AcmeClient struct {
 	certPath          string
 	keyPath           string
 	log               *logrus.Entry
+	timer             *time.Timer
 }
 
 func NewAcmeClient(acmeDirectory, commonName, certPath, keyPath string) (*AcmeClient, error) {
@@ -39,7 +40,13 @@ func NewAcmeClient(acmeDirectory, commonName, certPath, keyPath string) (*AcmeCl
 		mu:            &sync.Mutex{},
 		commonName:    commonName,
 		log:           logrus.WithField("at", "acme"),
+		timer:         time.NewTimer(365 * 24 * time.Hour),
 	}
+	//go func() {
+	//	for _ := range ac.timer.C {
+	//
+	//	}
+	//}()
 	if err := ac.load(); err != nil {
 		return nil, err
 	}
@@ -123,8 +130,10 @@ func (ac *AcmeClient) setCertificate(cert *x509.Certificate) {
 	ac.certificate = cert
 	// TODO: init refresh timer here
 	now := time.Now()
-	ac.log.Infof("Certificate is active for %s (until %s)", cert.NotAfter.Sub(now).String(), cert.NotAfter)
+	duration := cert.NotAfter.Sub(now)
+	ac.log.Infof("Certificate is active for %s (until %s)", duration.String(), cert.NotAfter)
 	ac.log.Infof("Active FQDNs: %s + %s", cert.DNSNames, cert.PermittedDNSDomains)
+	//t := time.NewTimer(duration)
 }
 
 func (ac *AcmeClient) refresh(hosts []string) error {

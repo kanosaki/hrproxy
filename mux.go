@@ -8,20 +8,20 @@ import (
 	"io"
 	"net"
 	"sync"
-	"github.com/Sirupsen/logrus"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type HostMux struct {
 	proxies map[string]*ReverseProxy
 	bufpool *BufferPool
-	log     *logrus.Entry
+	access  *ESLogger
 }
 
-func NewHostMux() *HostMux {
+func NewHostMux(es *elastic.Client) *HostMux {
 	return &HostMux{
 		proxies: make(map[string]*ReverseProxy),
 		bufpool: NewBufferPool(100, 32*1024), // 100 x 32KiB buffers
-		log:     logrus.WithField("tag", "web"),
+		access:  NewESLogger(es, 100, 30*time.Second, "web-access"),
 	}
 }
 
@@ -29,35 +29,26 @@ func (m HostMux) AddProxy(host string, url *url.URL) {
 	m.proxies[host] = NewReverseProxy(url, m.bufpool)
 }
 
-func (m *HostMux) mkLogger(req *http.Request) *logrus.Entry {
-	return logRequest(m.log, req)
-}
-
 func (m *HostMux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	log := m.mkLogger(req)
+	begin := time.Now()
 	host := req.Host
 	if len(host) == 0 {
 		w.WriteHeader(500)
-		log.WithField("code", 500).Infof("")
+		m.access.Add(req, 500, begin, time.Now())
 		return
 	}
 	if prox, ok := m.proxies[host]; ok {
-		begin := time.Now()
 		res := prox.ServeHTTP(w, req)
-		elapsed := time.Now().Sub(begin)
 		var code int
 		if res == nil {
 			code = 500
 		} else {
 			code = res.StatusCode
 		}
-		log.WithFields(logrus.Fields{
-			"code":       code,
-			"elapsed_ms": float32(elapsed.Nanoseconds()) / 1000 / 1000,
-		}).Info("")
+		m.access.Add(req, code, begin, time.Now())
 	} else {
 		w.WriteHeader(404)
-		log.WithField("code", 404).Infof("")
+		m.access.Add(req, 404, begin, time.Now())
 	}
 }
 

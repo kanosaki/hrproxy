@@ -5,9 +5,14 @@ import (
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
+	"fmt"
 )
 
 func main() {
+	if os.Getuid() != 0 {
+		fmt.Fprintln(os.Stderr, "Please run as root.")
+	}
 	logrus.SetLevel(logrus.DebugLevel)
 	confBytes, err := ioutil.ReadFile("default.yaml")
 	if err != nil {
